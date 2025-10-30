@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles/globals.css";
 import { KanbanBoard } from "./components/KanbanBoard/KanbanBoard";
@@ -8,6 +8,7 @@ import Login from "./components/Auth/Login";
 import { signOut } from "firebase/auth";
 import { auth } from "./firebase/config";
 import AuthForm from "./components/Auth/AuthForm";
+import { onAuthStateChanged } from "firebase/auth";
 
 function Navbar({ darkMode, toggleDarkMode, user, onLogout }) {
   return (
@@ -42,7 +43,18 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [query, setQuery] = useState("");
   const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
+  // 🔒 Check Firebase auth state persistence
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false); // ✅ stop showing loader once Firebase responds
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 🧩 Kanban state
   const {
     columns,
     tasks,
@@ -57,6 +69,7 @@ function App() {
     document.documentElement.classList.toggle("dark");
   };
 
+  // 🔍 Search/filter logic
   const filteredTasks = useMemo(() => {
     if (!query.trim()) return tasks;
     const q = query.toLowerCase();
@@ -75,10 +88,22 @@ function App() {
     setUser(null);
   };
 
+  // 🚀 Loading screen while Firebase checks login
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-gray-100 dark:bg-gray-900 transition-colors">
+        <div className="animate-spin rounded-full h-14 w-14 border-t-4 border-blue-500 mb-4"></div>
+        <p className="text-gray-700 dark:text-gray-300">Loading Kanban...</p>
+      </div>
+    );
+  }
+
+  // 🔑 If not logged in — show auth page
   if (!user) {
     return <AuthForm onLogin={setUser} />;
   }
 
+  // ✅ If logged in — show full Kanban
   return (
     <div
       className={`min-h-screen flex flex-col transition-colors ${
@@ -95,6 +120,7 @@ function App() {
       />
 
       <main className="flex-1 p-8 text-neutral-900 dark:text-gray-100">
+        {/* 🔍 Search Bar */}
         <div className="max-w-2xl mx-auto mb-6 flex items-center gap-3">
           <input
             type="text"
