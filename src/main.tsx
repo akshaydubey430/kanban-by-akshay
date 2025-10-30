@@ -4,14 +4,12 @@ import "./styles/globals.css";
 import { KanbanBoard } from "./components/KanbanBoard/KanbanBoard";
 import { useKanbanBoard } from "./hooks/useKanbanBoard";
 import { sampleColumns, sampleTasks } from "./sample-data";
+import Login from "./components/Auth/Login";
+import { signOut } from "firebase/auth";
+import { auth } from "./firebase/config";
+import AuthForm from "./components/Auth/AuthForm";
 
-function Navbar({
-  darkMode,
-  toggleDarkMode,
-}: {
-  darkMode: boolean;
-  toggleDarkMode: () => void;
-}) {
+function Navbar({ darkMode, toggleDarkMode, user, onLogout }) {
   return (
     <nav className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md dark:from-gray-800 dark:to-gray-700">
       <div className="text-2xl font-semibold tracking-wide">
@@ -24,8 +22,16 @@ function Navbar({
         >
           {darkMode ? "☀️ Light" : "🌙 Dark"}
         </button>
+        {user && (
+          <button
+            onClick={onLogout}
+            className="px-3 py-1.5 bg-white/10 rounded-md hover:bg-white/20 text-sm"
+          >
+            🚪 Logout
+          </button>
+        )}
         <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center font-bold text-white">
-          A
+          {user?.displayName?.charAt(0) || "A"}
         </div>
       </div>
     </nav>
@@ -35,8 +41,8 @@ function Navbar({
 function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [query, setQuery] = useState("");
+  const [user, setUser] = useState<any>(null);
 
-  // ✅ Use real Kanban hook (dynamic state)
   const {
     columns,
     tasks,
@@ -51,7 +57,6 @@ function App() {
     document.documentElement.classList.toggle("dark");
   };
 
-  // 🔍 Filter logic for tasks
   const filteredTasks = useMemo(() => {
     if (!query.trim()) return tasks;
     const q = query.toLowerCase();
@@ -65,6 +70,15 @@ function App() {
     return result;
   }, [query, tasks]);
 
+  const handleLogout = async () => {
+    await signOut(auth);
+    setUser(null);
+  };
+
+  if (!user) {
+    return <AuthForm onLogin={setUser} />;
+  }
+
   return (
     <div
       className={`min-h-screen flex flex-col transition-colors ${
@@ -73,10 +87,14 @@ function App() {
           : "bg-gradient-to-br from-neutral-50 to-blue-50"
       }`}
     >
-      <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+      <Navbar
+        darkMode={darkMode}
+        toggleDarkMode={toggleDarkMode}
+        user={user}
+        onLogout={handleLogout}
+      />
 
       <main className="flex-1 p-8 text-neutral-900 dark:text-gray-100">
-        {/* 🔍 Search / filter bar */}
         <div className="max-w-2xl mx-auto mb-6 flex items-center gap-3">
           <input
             type="text"
@@ -96,7 +114,6 @@ function App() {
         </div>
 
         <div className="max-w-full overflow-x-auto">
-          {/* ✅ Hook-connected Kanban board */}
           <KanbanBoard
             columns={columns}
             tasks={filteredTasks}
