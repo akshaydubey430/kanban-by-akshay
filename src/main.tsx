@@ -4,7 +4,7 @@ import "./styles/globals.css";
 import { KanbanBoard } from "./components/KanbanBoard/KanbanBoard";
 import { useKanbanBoard } from "./hooks/useKanbanBoard";
 import { sampleColumns, sampleTasks } from "./sample-data";
-import Login from "./components/Auth/Login";
+//import Login from "./components/Auth/Login";
 import { signOut } from "firebase/auth";
 import { auth } from "./firebase/config";
 import AuthForm from "./components/Auth/AuthForm";
